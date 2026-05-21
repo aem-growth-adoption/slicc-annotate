@@ -21,13 +21,14 @@ a JPEG data URL for attachment to the chat input.
 ```
 User triggers annotation (lick button / command / keyboard shortcut)
   → Sprinkle "annotate" opens as full-document .shtml
-  → Sprinkle requests screenshot via slicc.lick({action:'request-screenshot'})
-  → Owning scoop uses Chrome tabs API (extension mode) to capture visible tab
-  → Scoop pushes base64 data URL back via sprinkle send annotate '{"baseImage":"data:..."}'
+  → Empty state shown: "Capture screenshot" or "Paste image (Cmd+V)"
+  → User clicks Screenshot → slicc.lick({action:'request-screenshot'})
+  → Cone runs screencapture, resizes, pushes base64 via sprinkle send annotate '{"baseImage":"data:..."}'
+  → OR user pastes image from clipboard (Cmd+V) — loaded directly onto canvas
   → User annotates on canvas overlay
-  → User clicks "Capture" → sprinkle composites base + annotations into JPEG
-  → Sprinkle sends slicc.lick({action:'capture', dataUrl:'data:image/jpeg;base64,...'})
-  → Cone receives lick and attaches the image to the current chat input
+  → User clicks "Attach to Chat" → sprinkle composites base + annotations into JPEG
+  → Sprinkle calls slicc.attachImage(dataUrl) to attach directly to chat input
+  → Sprinkle stays open (user switches to chat tab manually)
 ```
 
 The sprinkle lives at `/shared/sprinkles/annotate/annotate.shtml`.
@@ -50,9 +51,12 @@ If the scoop already exists (`list_scoops`), just `feed_scoop` the existing one.
 
 | Lick `action`         | Origin    | Cone action                                                                 |
 | --------------------- | --------- | --------------------------------------------------------------------------- |
-| `request-screenshot`  | Sprinkle  | Scoop handles via Chrome tabs API; pushes base64 back to sprinkle           |
-| `capture`             | Sprinkle  | Contains `dataUrl` — cone attaches as pending image to chat input           |
-| `close`               | Sprinkle  | Dismiss sprinkle                                                            |
+| `request-screenshot`  | Sprinkle  | Cone runs screencapture, resizes to ≤1568px, pushes base64 back via sprinkle send |
+| `close`               | Sprinkle  | Dismiss sprinkle via `sprinkle close annotate`                              |
+
+Note: The "Attach to Chat" button calls `slicc.attachImage(dataUrl)` directly — no lick event
+is sent to the cone for attachment. If `slicc.attachImage` is unavailable, falls back to
+`slicc.lick({action:'capture', dataUrl:'...'})` but the dataUrl may be truncated by the bridge.
 
 ## Drawing tools
 
@@ -71,7 +75,8 @@ If the scoop already exists (`list_scoops`), just `feed_scoop` the existing one.
 - Color picker (6 preset swatches: red, blue, green, yellow, white, black — default red)
 - Undo (pop last stroke)
 - Clear (remove all strokes)
-- Capture (composite + send lick)
+- Screenshot (request new base image from cone)
+- Attach to Chat (composite + call slicc.attachImage)
 - Close (dismiss without capturing)
 
 Shadow DOM element, position fixed top center, z-index 2147483647, dark translucent
@@ -92,19 +97,33 @@ JPEG, 0.85 quality, capped at 1568px long edge, <5MB. If result >5MB, downscale 
 ```
 You own the sprinkle 'annotate'. Your job:
 
-1. Run: read_file /workspace/skills/sprinkles/style-guide.md
-2. Run: read_file /workspace/skills/screenshot-annotator/sprinkle-reference.md
+1. Run: read_file /workspace/skills/screenshot-annotator/sprinkle-reference.md
+2. Check if /shared/sprinkles/annotate/annotate.shtml already exists. If it does, skip to step 4.
 3. Write the sprinkle to /shared/sprinkles/annotate/annotate.shtml
    — Use full-document mode (<!DOCTYPE html>)
    — Follow the structure in sprinkle-reference.md exactly
    — Icon: <link rel="icon" href="pencil" />
 4. Run: sprinkle open annotate
 5. Stay ready for lick events forwarded by the cone.
-   - action='request-screenshot': Use Chrome tabs API to capture, push back via sprinkle send
-   - action='capture': Contains dataUrl; acknowledge to cone
+   - action='request-screenshot': Cone handles this directly (runs screencapture, pushes back)
    - action='close': Run sprinkle close annotate
 Do not send a completion message.
 ```
+
+## Cone handling of request-screenshot
+
+When the cone receives `{action: 'request-screenshot'}` from the annotate sprinkle:
+
+```bash
+screencapture /shared/annotate-capture.png
+magick /shared/annotate-capture.png -resize 1568x -quality 85 /shared/annotate-capture.jpg
+base64 /shared/annotate-capture.jpg | tr -d '\n' > /tmp/b64.txt
+DATAURL="data:image/jpeg;base64,$(cat /tmp/b64.txt)"
+sprinkle send annotate "{\"baseImage\":\"$DATAURL\"}"
+```
+
+The cone handles this directly (not via scoop) because it has full filesystem access
+and `screencapture` requires the cone's execution context.
 
 ## Key implementation details
 
@@ -119,5 +138,7 @@ Do not send a completion message.
 ## Don't
 
 - Don't create a second scoop if `annotate` already exists — feed the existing one.
-- Don't run screencapture from the cone — the scoop handles capture via Chrome API.
+- Don't run screencapture from a scoop — scoops don't have write access to `/shared/`. The cone handles capture directly.
 - Don't use `onclick` attributes — use `addEventListener` inside an IIFE.
+- Don't auto-request a screenshot on sprinkle load — show the empty state instead.
+- Don't auto-close the sprinkle after attach — let the user switch tabs manually.
