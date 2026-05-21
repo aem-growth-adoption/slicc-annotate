@@ -2,6 +2,14 @@
 
 A screenshot annotation skill for [SLICC](https://github.com/ai-ecoverse/slicc) — the browser-native AI agent runtime.
 
+## Quick Install
+
+If you have SLICC running, click the link below to install this skill directly:
+
+> **[Install in SLICC](https://www.sliccy.ai/handoff?msg=upskill%3Ahttps%3A%2F%2Fgithub.com%2Faem-growth-adoption%2Fslicc-annotate)**
+
+This uses SLICC's handoff feature to trigger `upskill` with this repo URL — SLICC will clone the skill and sprinkle into your workspace automatically.
+
 ## What it does
 
 Captures the active browser tab, lets you draw annotations (pencil, highlighter, rectangle, ellipse, arrow, text), then attaches the composited image to your chat message.
@@ -17,7 +25,7 @@ sprinkles/annotate/
 └── annotate.shtml            # The full-document sprinkle UI
 ```
 
-## Installation
+## Manual Installation
 
 Copy into your SLICC workspace:
 
