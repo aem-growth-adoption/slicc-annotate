@@ -7,156 +7,162 @@
   <link rel="icon" href="pencil" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      width: 100%; height: 100%; overflow: hidden;
-      background: var(--s2-bg-base, #f5f5f5);
-      color: var(--s2-gray-900, #1a1a1a);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 13px;
-    }
-    .app {
-      display: flex; flex-direction: column; height: 100%;
-    }
-
-    /* Toolbar row */
-    .toolbar {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
-      padding: 8px 10px;
-      background: var(--s2-bg-elevated, #fff);
-      border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
-    }
-    .tool-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: 32px; height: 32px; border-radius: 50%;
-      border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
-      background: transparent; color: var(--s2-gray-800, #333);
-      cursor: pointer; transition: all 0.12s;
-    }
-    .tool-btn:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
-    .tool-btn.active {
-      background: var(--s2-accent, #6366f1);
-      border-color: var(--s2-accent, #6366f1);
-      color: #fff;
-      box-shadow: 0 0 6px rgba(99,102,241,0.4);
-    }
-    .tool-btn svg {
-      width: 16px; height: 16px; fill: none; stroke: currentColor;
-      stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
-    }
-    .toolbar-sep {
-      width: 1px; height: 20px; background: color-mix(in srgb, currentColor 15%, transparent); margin: 0 2px;
-    }
-    .swatch {
-      width: 22px; height: 22px; border-radius: 50%;
-      border: 2px solid transparent; cursor: pointer; transition: border-color 0.12s;
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 10%, transparent);
-    }
-    .swatch.active { border-color: var(--s2-accent, #6366f1); box-shadow: 0 0 0 2px color-mix(in srgb, var(--s2-accent, #6366f1) 40%, transparent); }
-    .swatch[data-color="#ffffff"] { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
-    .swatch[data-color="#ffffff"].active { border-color: var(--s2-accent, #6366f1); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2), 0 0 0 2px color-mix(in srgb, var(--s2-accent, #6366f1) 40%, transparent); }
-
-    /* Canvas area */
-    .canvas-wrap {
-      flex: 1; position: relative; overflow: hidden;
-      background: var(--s2-bg-layer-1, #f0f0f0);
-    }
-    #canvas {
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; }
+    #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+    #empty-state {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      cursor: crosshair;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 10; pointer-events: none;
+      color: rgba(255,255,255,0.7); font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      gap: 24px;
     }
-    #text-input {
-      position: absolute; display: none; z-index: 100;
-      background: transparent; border: 2px dashed currentColor;
-      color: inherit; font: 16px sans-serif; padding: 2px 4px;
-      outline: none; min-width: 80px;
+    #empty-state .icon-row {
+      display: flex; gap: 48px; align-items: center;
     }
-
-    /* Empty state */
-    .empty-state {
-      position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 12px;
-      color: color-mix(in srgb, currentColor 50%, transparent);
+    #empty-state .option {
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      opacity: 0.85;
     }
-    .empty-state svg {
-      width: 48px; height: 48px; stroke: currentColor; fill: none;
+    #empty-state .option svg {
+      width: 48px; height: 48px; stroke: rgba(255,255,255,0.6); fill: none;
       stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
     }
-    .empty-state.hidden { display: none; }
-
-    /* Action row */
-    .actions {
-      display: flex; gap: 8px; padding: 10px;
-      background: var(--s2-bg-elevated, #fff);
-      border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    #empty-state .option .label {
+      font-size: 14px; color: rgba(255,255,255,0.55); text-align: center;
     }
-    .actions button {
-      flex: 1; height: 34px; border-radius: var(--s2-radius-pill, 9999px);
-      font: 600 12px/1 -apple-system, BlinkMacSystemFont, sans-serif;
-      cursor: pointer; transition: all 0.12s; border: none;
+    #empty-state .option .shortcut {
+      font-size: 12px; color: rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.08); border-radius: 4px; padding: 2px 8px;
     }
-    .btn-secondary {
-      background: var(--s2-bg-elevated, #fff);
-      color: inherit;
-      border: 1px solid color-mix(in srgb, currentColor 25%, transparent) !important;
+    #empty-state .divider-text {
+      font-size: 13px; color: rgba(255,255,255,0.35); text-transform: uppercase;
+      letter-spacing: 0.1em;
     }
-    .btn-secondary:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
-    .btn-primary {
-      background: var(--s2-accent, #6366f1);
-      color: #fff;
+    #text-input {
+      position: absolute; display: none; z-index: 2147483646;
+      background: transparent; border: 2px dashed currentColor;
+      color: inherit; font: 16px sans-serif; padding: 2px 4px;
+      outline: none; min-width: 100px;
     }
-    .btn-primary:hover { background: color-mix(in srgb, var(--s2-accent, #6366f1) 85%, #000); }
-    .btn-primary:disabled {
-      opacity: 0.35; cursor: not-allowed;
-    }
-    .btn-secondary:disabled {
-      opacity: 0.4; cursor: not-allowed;
-    }
-
-    /* Toast */
-    .toast {
-      position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
-      padding: 6px 14px; border-radius: var(--s2-radius-default, 8px);
-      background: var(--s2-negative, #dc2626); color: #fff; font-size: 12px;
-      pointer-events: none; opacity: 0; transition: opacity 0.3s;
-      z-index: 200;
-    }
-    .toast.visible { opacity: 1; }
   </style>
 </head>
 <body>
-  <div class="app">
-    <div class="toolbar" id="toolbar"></div>
-    <div class="canvas-wrap">
-      <canvas id="canvas"></canvas>
-      <input id="text-input" type="text" />
-      <div class="empty-state" id="empty-state">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        <span>No screenshot yet</span>
+  <canvas id="canvas"></canvas>
+  <div id="empty-state">
+    <div class="icon-row">
+      <div class="option">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="1" fill="rgba(255,255,255,0.6)"/></svg>
+        <div class="label">Capture screenshot</div>
+        <div class="shortcut">Click "Screenshot" above</div>
       </div>
-      <div class="toast" id="toast"></div>
-    </div>
-    <div class="actions">
-      <button class="btn-secondary" id="btn-capture">Capture Screenshot</button>
-      <button class="btn-primary" id="btn-attach" disabled>Attach to Chat</button>
+      <div class="divider-text">or</div>
+      <div class="option">
+        <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+        <div class="label">Paste an image</div>
+        <div class="shortcut">⌘V / Ctrl+V</div>
+      </div>
     </div>
   </div>
-
+  <input id="text-input" type="text" />
   <script>
   (function() {
     'use strict';
 
-    // --- DOM refs ---
+    // --- Lick dedup ---
+    var lastLick = {};
+    function safeLick(payload) {
+      var key = payload.action;
+      var now = Date.now();
+      if (lastLick[key] && now - lastLick[key] < 2000) return;
+      lastLick[key] = now;
+      slicc.lick(payload);
+    }
+
+    // --- Toolbar (Shadow DOM) ---
+    var toolbarHost = document.createElement('div');
+    toolbarHost.id = 'toolbar-host';
+    document.body.appendChild(toolbarHost);
+    var shadow = toolbarHost.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '\
+      <style>\
+        :host {\
+          position: fixed; top: 12px; left: 50%; transform: translateX(-50%);\
+          z-index: 2147483647; pointer-events: auto;\
+        }\
+        .toolbar {\
+          display: flex; align-items: center; gap: 6px; padding: 8px 16px;\
+          background: rgba(30, 30, 50, 0.92); backdrop-filter: blur(12px);\
+          border-radius: 9999px; box-shadow: 0 4px 24px rgba(0,0,0,0.4);\
+          font: 13px/1 -apple-system, BlinkMacSystemFont, sans-serif;\
+          color: #e0e0e0;\
+        }\
+        button {\
+          display: flex; align-items: center; justify-content: center;\
+          height: 32px; min-width: 32px; padding: 0 10px;\
+          border: 1px solid rgba(255,255,255,0.15); border-radius: 9999px;\
+          background: transparent; color: #e0e0e0; cursor: pointer;\
+          font: inherit; transition: all 0.15s;\
+        }\
+        button:hover { background: rgba(255,255,255,0.1); }\
+        button.active { background: rgba(99,102,241,0.3); border-color: #6366f1; color: #a5b4fc; }\
+        button.capture { background: #6366f1; border-color: #6366f1; color: #fff; font-weight: 600; }\
+        button.capture:hover { background: #4f46e5; }\
+        button.capture:disabled { opacity: 0.5; cursor: not-allowed; }\
+        button.close { border-color: rgba(239,68,68,0.4); color: #fca5a5; }\
+        button.close:hover { background: rgba(239,68,68,0.15); }\
+        .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.15); margin: 0 4px; }\
+        .swatch {\
+          width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent;\
+          cursor: pointer; transition: border-color 0.15s;\
+        }\
+        .swatch.active { border-color: #fff; }\
+        svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }\
+      </style>\
+      <div class="toolbar">\
+        <button data-tool="pencil" class="active" title="Pencil (1)">\
+          <svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>\
+        </button>\
+        <button data-tool="highlighter" title="Highlighter (2)">\
+          <svg viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>\
+        </button>\
+        <button data-tool="rectangle" title="Rectangle (3)">\
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>\
+        </button>\
+        <button data-tool="ellipse" title="Ellipse (4)">\
+          <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="8"/></svg>\
+        </button>\
+        <button data-tool="arrow" title="Arrow (5)">\
+          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>\
+        </button>\
+        <button data-tool="text" title="Text (6)">\
+          <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>\
+        </button>\
+        <div class="sep"></div>\
+        <div class="swatch active" data-color="#ef4444" style="background:#ef4444" title="Red"></div>\
+        <div class="swatch" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></div>\
+        <div class="swatch" data-color="#22c55e" style="background:#22c55e" title="Green"></div>\
+        <div class="swatch" data-color="#eab308" style="background:#eab308" title="Yellow"></div>\
+        <div class="swatch" data-color="#ffffff" style="background:#ffffff" title="White"></div>\
+        <div class="swatch" data-color="#000000" style="background:#000000; border: 1px solid rgba(255,255,255,0.3)" title="Black"></div>\
+        <div class="sep"></div>\
+        <button data-action="undo" title="Undo (Ctrl+Z)">\
+          <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>\
+        </button>\
+        <button data-action="clear" title="Clear all">\
+          <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>\
+        </button>\
+        <div class="sep"></div>\
+        <button data-action="screenshot" class="capture" title="New Screenshot">Screenshot</button>\
+        <button data-action="attach" class="capture" title="Attach to Chat">Attach</button>\
+        <button data-action="close" class="close" title="Close (Esc)">Close</button>\
+      </div>';
+
+    // --- Constants and state ---
     var canvas = document.getElementById('canvas');
     var ctx = canvas.getContext('2d');
     var textInput = document.getElementById('text-input');
-    var toolbar = document.getElementById('toolbar');
-    var emptyState = document.getElementById('empty-state');
-    var btnCapture = document.getElementById('btn-capture');
-    var btnAttach = document.getElementById('btn-attach');
-    var toastEl = document.getElementById('toast');
-
-    // --- State ---
     var dpr = window.devicePixelRatio || 1;
+
     var baseImage = null;
     var strokes = [];
     var currentStroke = null;
@@ -164,142 +170,38 @@
     var currentColor = '#ef4444';
     var isDrawing = false;
 
-    // Restore persisted preferences
-    var saved = slicc.getState();
-    if (saved) {
-      if (saved.tool) currentTool = saved.tool;
-      if (saved.color) currentColor = saved.color;
-    }
-
-    function persistPrefs() {
-      slicc.setState({ tool: currentTool, color: currentColor });
-    }
-
-    // --- Toast ---
-    var toastTimer = null;
-    function showToast(msg) {
-      toastEl.textContent = msg;
-      toastEl.classList.add('visible');
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(function() { toastEl.classList.remove('visible'); }, 3000);
-    }
-
-    // --- Build toolbar ---
-    var tools = [
-      { id: 'pencil', title: 'Pencil (1)', svg: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>' },
-      { id: 'highlighter', title: 'Highlighter (2)', svg: '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>' },
-      { id: 'rectangle', title: 'Rectangle (3)', svg: '<rect x="3" y="3" width="18" height="18" rx="2"/>' },
-      { id: 'ellipse', title: 'Ellipse (4)', svg: '<ellipse cx="12" cy="12" rx="10" ry="8"/>' },
-      { id: 'arrow', title: 'Arrow (5)', svg: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>' },
-      { id: 'text', title: 'Text (6)', svg: '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>' }
-    ];
-    var colors = [
-      { hex: '#ef4444', title: 'Red' },
-      { hex: '#3b82f6', title: 'Blue' },
-      { hex: '#22c55e', title: 'Green' },
-      { hex: '#eab308', title: 'Yellow' },
-      { hex: '#ffffff', title: 'White' },
-      { hex: '#000000', title: 'Black' }
-    ];
-
-    // Tool buttons
-    tools.forEach(function(t) {
-      var btn = document.createElement('button');
-      btn.className = 'tool-btn' + (t.id === currentTool ? ' active' : '');
-      btn.title = t.title;
-      btn.dataset.tool = t.id;
-      btn.innerHTML = '<svg viewBox="0 0 24 24">' + t.svg + '</svg>';
-      btn.addEventListener('click', function() {
-        selectTool(t.id);
-      });
-      toolbar.appendChild(btn);
-    });
-
-    // Separator
-    var sep1 = document.createElement('div');
-    sep1.className = 'toolbar-sep';
-    toolbar.appendChild(sep1);
-
-    // Color swatches
-    colors.forEach(function(c) {
-      var sw = document.createElement('div');
-      sw.className = 'swatch' + (c.hex === currentColor ? ' active' : '');
-      sw.title = c.title;
-      sw.dataset.color = c.hex;
-      sw.style.background = c.hex;
-      // Black swatch gets subtle outline via the general .swatch box-shadow rule
-      sw.addEventListener('click', function() {
-        toolbar.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('active'); });
-        sw.classList.add('active');
-        currentColor = c.hex;
-        persistPrefs();
-      });
-      toolbar.appendChild(sw);
-    });
-
-    // Separator
-    var sep2 = document.createElement('div');
-    sep2.className = 'toolbar-sep';
-    toolbar.appendChild(sep2);
-
-    // Undo button
-    var undoBtn = document.createElement('button');
-    undoBtn.className = 'tool-btn';
-    undoBtn.title = 'Undo (Ctrl+Z)';
-    undoBtn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
-    undoBtn.addEventListener('click', function() { undo(); });
-    toolbar.appendChild(undoBtn);
-
-    // Clear button
-    var clearBtn = document.createElement('button');
-    clearBtn.className = 'tool-btn';
-    clearBtn.title = 'Clear (Esc)';
-    clearBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>';
-    clearBtn.addEventListener('click', function() { clearAll(); });
-    toolbar.appendChild(clearBtn);
-
-    function selectTool(id) {
-      currentTool = id;
-      toolbar.querySelectorAll('.tool-btn[data-tool]').forEach(function(b) {
-        b.classList.toggle('active', b.dataset.tool === id);
-      });
-      persistPrefs();
-    }
-
     // --- Canvas sizing ---
     function resizeCanvas() {
-      var wrap = canvas.parentElement;
-      var w = wrap.clientWidth;
-      var h = wrap.clientHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       redraw();
     }
     window.addEventListener('resize', resizeCanvas);
-    // Defer initial sizing to next frame so layout is computed
-    requestAnimationFrame(resizeCanvas);
+    resizeCanvas();
 
     // --- Redraw ---
     function redraw() {
-      var w = canvas.width / dpr;
-      var h = canvas.height / dpr;
-      ctx.clearRect(0, 0, w, h);
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
 
       if (baseImage) {
-        var scale = Math.min(w / baseImage.naturalWidth, h / baseImage.naturalHeight);
-        var iw = baseImage.naturalWidth * scale;
-        var ih = baseImage.naturalHeight * scale;
-        var ix = (w - iw) / 2;
-        var iy = (h - ih) / 2;
-        ctx.drawImage(baseImage, ix, iy, iw, ih);
+        var scale = Math.min(
+          (canvas.width / dpr) / baseImage.naturalWidth,
+          (canvas.height / dpr) / baseImage.naturalHeight
+        );
+        var w = baseImage.naturalWidth * scale;
+        var h = baseImage.naturalHeight * scale;
+        var x = ((canvas.width / dpr) - w) / 2;
+        var y = ((canvas.height / dpr) - h) / 2;
+        ctx.drawImage(baseImage, x, y, w, h);
       }
 
       for (var i = 0; i < strokes.length; i++) {
         drawStroke(strokes[i]);
       }
+
       if (currentStroke) {
         drawStroke(currentStroke);
       }
@@ -327,11 +229,13 @@
             ctx.stroke();
           }
           break;
+
         case 'rectangle':
           if (s.rect) {
             ctx.strokeRect(s.rect.x, s.rect.y, s.rect.w, s.rect.h);
           }
           break;
+
         case 'ellipse':
           if (s.rect) {
             var cx = s.rect.x + s.rect.w / 2;
@@ -343,6 +247,7 @@
             ctx.stroke();
           }
           break;
+
         case 'arrow':
           if (s.start && s.end) {
             ctx.beginPath();
@@ -361,6 +266,7 @@
             ctx.stroke();
           }
           break;
+
         case 'text':
           if (s.text && s.position) {
             ctx.font = s.lineWidth * 5 + 'px sans-serif';
@@ -428,7 +334,6 @@
       strokes.push(currentStroke);
       currentStroke = null;
       redraw();
-      updateAttachBtn();
     });
 
     // --- Text tool ---
@@ -456,7 +361,6 @@
             position: textInput._pos
           });
           redraw();
-          updateAttachBtn();
         }
         textInput.style.display = 'none';
       } else if (e.key === 'Escape') {
@@ -464,36 +368,61 @@
       }
     });
 
-    // --- Undo / Clear ---
-    function undo() {
+    // --- Toolbar event wiring ---
+    shadow.querySelectorAll('[data-tool]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        shadow.querySelectorAll('[data-tool]').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        currentTool = btn.dataset.tool;
+      });
+    });
+
+    shadow.querySelectorAll('.swatch').forEach(function(sw) {
+      sw.addEventListener('click', function() {
+        shadow.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('active'); });
+        sw.classList.add('active');
+        currentColor = sw.dataset.color;
+      });
+    });
+
+    shadow.querySelector('[data-action="undo"]').addEventListener('click', function() {
       strokes.pop();
       redraw();
-      updateAttachBtn();
-    }
+    });
 
-    function clearAll() {
+    shadow.querySelector('[data-action="clear"]').addEventListener('click', function() {
       strokes = [];
       currentStroke = null;
       redraw();
-      updateAttachBtn();
-    }
-
-    // --- Attach button state ---
-    function updateAttachBtn() {
-      btnAttach.disabled = !(strokes.length > 0 && baseImage);
-    }
-
-    // --- Capture screenshot ---
-    btnCapture.addEventListener('click', function() {
-      btnCapture.disabled = true;
-      btnCapture.textContent = 'Capturing...';
-      slicc.lick({ action: 'capture-screenshot' });
     });
 
-    // --- Attach to chat ---
-    btnAttach.addEventListener('click', function() {
-      if (!baseImage || strokes.length === 0) return;
+    // Screenshot button — requests a new base image from the scoop
+    var screenshotBtn = shadow.querySelector('[data-action="screenshot"]');
+    screenshotBtn.addEventListener('click', function() {
+      safeLick({ action: 'request-screenshot' });
+    });
 
+    // Attach to Chat — composites base + annotations, attaches via slicc.attachImage
+    var attachBtn = shadow.querySelector('[data-action="attach"]');
+    attachBtn.addEventListener('click', function() {
+      if (!baseImage) return;
+      attachBtn.disabled = true;
+      var dataUrl = getCompositeDataUrl();
+      if (typeof slicc.attachImage === 'function') {
+        slicc.attachImage(dataUrl);
+      } else {
+        safeLick({ action: 'capture', dataUrl: dataUrl });
+      }
+      setTimeout(function() { attachBtn.disabled = false; }, 2000);
+    });
+
+    shadow.querySelector('[data-action="close"]').addEventListener('click', function() {
+      safeLick({ action: 'close' });
+      slicc.close();
+    });
+
+    // --- Get composite as data URL ---
+    function getCompositeDataUrl() {
       var srcW = canvas.width / dpr;
       var srcH = canvas.height / dpr;
       var maxEdge = 1568;
@@ -513,48 +442,98 @@
       var quality = 0.85;
       var dataUrl = offscreen.toDataURL('image/jpeg', quality);
 
-      // If > 5MB base64, reduce quality
-      while (dataUrl.length > 6850000 && quality > 0.3) {
-        quality -= 0.05;
+      while (dataUrl.length > 5 * 1024 * 1024 * 1.37 && quality > 0.3) {
+        quality -= 0.1;
         dataUrl = offscreen.toDataURL('image/jpeg', quality);
       }
+      return dataUrl;
+    }
 
-      slicc.attachImage(dataUrl, 'annotation.jpg', 'image/jpeg');
-      slicc.close();
-    });
 
-    // --- Receive updates from scoop ---
+
+    // --- Receive base image ---
+    var emptyState = document.getElementById('empty-state');
+    function loadBaseImage(dataUrl) {
+      var img = new Image();
+      img.onload = function() {
+        baseImage = img;
+        if (emptyState) emptyState.style.display = 'none';
+        redraw();
+      };
+      img.src = dataUrl;
+    }
+
     slicc.on('update', function(data) {
-      if (data.action === 'screenshot-ready') {
-        var img = new Image();
-        img.onload = function() {
-          baseImage = img;
-          emptyState.classList.add('hidden');
-          btnCapture.disabled = false;
-          btnCapture.textContent = 'Capture Screenshot';
-          resizeCanvas();
-          updateAttachBtn();
-        };
-        img.onerror = function() {
-          showToast('Failed to load screenshot');
-          btnCapture.disabled = false;
-          btnCapture.textContent = 'Capture Screenshot';
-        };
-        img.src = data.src;
-      }
-      if (data.action === 'screenshot-failed') {
-        showToast(data.error || 'Capture failed');
-        btnCapture.disabled = false;
-        btnCapture.textContent = 'Capture Screenshot';
+      // Accept multiple field names for flexibility
+      var src = data.baseImage || data.dataUrl || (data.action === 'load-image' && data.dataUrl);
+      if (src) {
+        loadBaseImage(src);
+      } else if (data.reload) {
+        // Cone wrote image to file, reload from VFS
+        loadBaseFromFile();
       }
     });
+
+    // --- Clipboard paste support (Cmd+V / Ctrl+V) ---
+    document.addEventListener('paste', function(e) {
+      var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          var blob = items[i].getAsFile();
+          var reader = new FileReader();
+          reader.onload = function(ev) {
+            loadBaseImage(ev.target.result);
+          };
+          reader.readAsDataURL(blob);
+          return;
+        }
+      }
+    });
+
+    // --- Load base image from VFS file ---
+    function loadBaseFromFile() {
+      slicc.readFile('/shared/annotate-base.jpg').then(function(data) {
+        if (data && data.length > 100) {
+          // readFile returns base64 for binary files
+          var src = data.indexOf('data:') === 0 ? data : 'data:image/jpeg;base64,' + data;
+          loadBaseImage(src);
+        } else {
+          // No file yet, request screenshot
+          safeLick({ action: 'request-screenshot' });
+        }
+      }).catch(function() {
+        safeLick({ action: 'request-screenshot' });
+      });
+    }
+
+    // --- Check for existing base image on load (don't auto-request) ---
+    setTimeout(function() {
+      slicc.readFile('/shared/annotate-base.jpg').then(function(data) {
+        if (data && data.length > 100) {
+          var src = data.indexOf('data:') === 0 ? data : 'data:image/jpeg;base64,' + data;
+          loadBaseImage(src);
+        }
+        // If no file, just show empty state — don't auto-request
+      }).catch(function() {
+        // No file, show empty state
+      });
+    }, 300);
 
     // --- Keyboard shortcuts ---
+    function selectTool(tool) {
+      currentTool = tool;
+      shadow.querySelectorAll('[data-tool]').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.tool === tool);
+      });
+    }
+
     document.addEventListener('keydown', function(e) {
       if (textInput.style.display !== 'none' && document.activeElement === textInput) return;
 
       if (e.key === 'Escape') {
-        clearAll();
+        safeLick({ action: 'close' });
+        slicc.close();
       } else if (e.key === '1') { selectTool('pencil'); }
       else if (e.key === '2') { selectTool('highlighter'); }
       else if (e.key === '3') { selectTool('rectangle'); }
@@ -563,7 +542,8 @@
       else if (e.key === '6') { selectTool('text'); }
       else if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
-        undo();
+        strokes.pop();
+        redraw();
       }
     });
 
