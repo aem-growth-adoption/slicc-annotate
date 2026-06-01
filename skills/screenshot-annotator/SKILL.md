@@ -28,6 +28,7 @@ User triggers annotation (lick button / command / keyboard shortcut)
   → User annotates on canvas overlay
   → User clicks "Attach to Chat" → sprinkle composites base + annotations into JPEG
   → Sprinkle calls slicc.attachImage(dataUrl) to attach directly to chat input
+  → Sprinkle calls slicc.minimize() to collapse panel to rail icon (fallback: slicc.close())
   → Sprinkle stays open (user switches to chat tab manually)
 ```
 
@@ -133,6 +134,7 @@ and `screencapture` requires the cone's execution context.
 - **HiDPI**: Canvas sized by viewport × devicePixelRatio for crisp rendering.
 - **Coordinate handling**: Pointer events adjusted via getBoundingClientRect().
 - **Dedup guard**: slicc.lick() fires duplicates — use timestamp cooldown pattern.
+- **Minimize after attach**: Call `slicc.minimize()` (SLICC v3.6.0+) ~500ms after attaching; fall back to `slicc.close()` on older runtimes.
 - **Shadow DOM toolbar**: Isolated from page styles, always on top.
 
 ## Don't
@@ -141,4 +143,4 @@ and `screencapture` requires the cone's execution context.
 - Don't run screencapture from a scoop — scoops don't have write access to `/shared/`. The cone handles capture directly.
 - Don't use `onclick` attributes — use `addEventListener` inside an IIFE.
 - Don't auto-request a screenshot on sprinkle load — show the empty state instead.
-- Don't auto-close the sprinkle after attach — let the user switch tabs manually.
+- Don't fully close the sprinkle after attach — use `slicc.minimize()` to collapse it to the rail icon.
