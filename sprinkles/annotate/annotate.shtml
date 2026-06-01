@@ -6,37 +6,52 @@
   <title>Annotate</title>
   <link rel="icon" href="pencil" />
   <style>
+    :root { color-scheme: light dark; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; }
-    #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: light-dark(#f0f0f5, #1a1a2e);
+    }
+    #canvas {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      cursor: crosshair;
+    }
     #empty-state {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       z-index: 10; pointer-events: none;
-      color: rgba(255,255,255,0.7); font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--s2-content-secondary, light-dark(#666, rgba(255,255,255,0.7)));
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       gap: 24px;
     }
     #empty-state .icon-row {
       display: flex; gap: 48px; align-items: center;
+      flex-wrap: wrap; justify-content: center; padding: 0 16px;
     }
     #empty-state .option {
       display: flex; flex-direction: column; align-items: center; gap: 12px;
       opacity: 0.85;
     }
     #empty-state .option svg {
-      width: 48px; height: 48px; stroke: rgba(255,255,255,0.6); fill: none;
-      stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+      width: 48px; height: 48px;
+      stroke: var(--s2-content-secondary, light-dark(#888, rgba(255,255,255,0.6)));
+      fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
     }
     #empty-state .option .label {
-      font-size: 14px; color: rgba(255,255,255,0.55); text-align: center;
+      font-size: 14px;
+      color: var(--s2-content-secondary, light-dark(#666, rgba(255,255,255,0.55)));
+      text-align: center;
     }
     #empty-state .option .shortcut {
-      font-size: 12px; color: rgba(255,255,255,0.35);
-      background: rgba(255,255,255,0.08); border-radius: 4px; padding: 2px 8px;
+      font-size: 12px;
+      color: var(--s2-content-secondary, light-dark(#999, rgba(255,255,255,0.35)));
+      background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.08));
+      border-radius: 4px; padding: 2px 8px;
     }
     #empty-state .divider-text {
-      font-size: 13px; color: rgba(255,255,255,0.35); text-transform: uppercase;
-      letter-spacing: 0.1em;
+      font-size: 13px;
+      color: var(--s2-content-secondary, light-dark(#999, rgba(255,255,255,0.35)));
+      text-transform: uppercase; letter-spacing: 0.1em;
     }
     #text-input {
       position: absolute; display: none; z-index: 2147483646;
@@ -51,7 +66,7 @@
   <div id="empty-state">
     <div class="icon-row">
       <div class="option">
-        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="1" fill="rgba(255,255,255,0.6)"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="1" fill="currentColor"/></svg>
         <div class="label">Capture screenshot</div>
         <div class="shortcut">Click "Screenshot" above</div>
       </div>
@@ -83,79 +98,133 @@
     toolbarHost.id = 'toolbar-host';
     document.body.appendChild(toolbarHost);
     var shadow = toolbarHost.attachShadow({ mode: 'open' });
-    shadow.innerHTML = '\
-      <style>\
-        :host {\
-          position: fixed; top: 12px; left: 50%; transform: translateX(-50%);\
-          z-index: 2147483647; pointer-events: auto;\
-        }\
-        .toolbar {\
-          display: flex; align-items: center; gap: 6px; padding: 8px 16px;\
-          background: rgba(30, 30, 50, 0.92); backdrop-filter: blur(12px);\
-          border-radius: 9999px; box-shadow: 0 4px 24px rgba(0,0,0,0.4);\
-          font: 13px/1 -apple-system, BlinkMacSystemFont, sans-serif;\
-          color: #e0e0e0;\
-        }\
-        button {\
-          display: flex; align-items: center; justify-content: center;\
-          height: 32px; min-width: 32px; padding: 0 10px;\
-          border: 1px solid rgba(255,255,255,0.15); border-radius: 9999px;\
-          background: transparent; color: #e0e0e0; cursor: pointer;\
-          font: inherit; transition: all 0.15s;\
-        }\
-        button:hover { background: rgba(255,255,255,0.1); }\
-        button.active { background: rgba(99,102,241,0.3); border-color: #6366f1; color: #a5b4fc; }\
-        button.capture { background: #6366f1; border-color: #6366f1; color: #fff; font-weight: 600; }\
-        button.capture:hover { background: #4f46e5; }\
-        button.capture:disabled { opacity: 0.5; cursor: not-allowed; }\
-        button.close { border-color: rgba(239,68,68,0.4); color: #fca5a5; }\
-        button.close:hover { background: rgba(239,68,68,0.15); }\
-        .sep { width: 1px; height: 20px; background: rgba(255,255,255,0.15); margin: 0 4px; }\
-        .swatch {\
-          width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent;\
-          cursor: pointer; transition: border-color 0.15s;\
-        }\
-        .swatch.active { border-color: #fff; }\
-        svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }\
-      </style>\
-      <div class="toolbar">\
-        <button data-tool="pencil" class="active" title="Pencil (1)">\
-          <svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>\
-        </button>\
-        <button data-tool="highlighter" title="Highlighter (2)">\
-          <svg viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>\
-        </button>\
-        <button data-tool="rectangle" title="Rectangle (3)">\
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>\
-        </button>\
-        <button data-tool="ellipse" title="Ellipse (4)">\
-          <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="8"/></svg>\
-        </button>\
-        <button data-tool="arrow" title="Arrow (5)">\
-          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>\
-        </button>\
-        <button data-tool="text" title="Text (6)">\
-          <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>\
-        </button>\
-        <div class="sep"></div>\
-        <div class="swatch active" data-color="#ef4444" style="background:#ef4444" title="Red"></div>\
-        <div class="swatch" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></div>\
-        <div class="swatch" data-color="#22c55e" style="background:#22c55e" title="Green"></div>\
-        <div class="swatch" data-color="#eab308" style="background:#eab308" title="Yellow"></div>\
-        <div class="swatch" data-color="#ffffff" style="background:#ffffff" title="White"></div>\
-        <div class="swatch" data-color="#000000" style="background:#000000; border: 1px solid rgba(255,255,255,0.3)" title="Black"></div>\
-        <div class="sep"></div>\
-        <button data-action="undo" title="Undo (Ctrl+Z)">\
-          <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>\
-        </button>\
-        <button data-action="clear" title="Clear all">\
-          <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>\
-        </button>\
-        <div class="sep"></div>\
-        <button data-action="screenshot" class="capture" title="New Screenshot">Screenshot</button>\
-        <button data-action="attach" class="capture" title="Attach to Chat">Attach</button>\
-        <button data-action="close" class="close" title="Close (Esc)">Close</button>\
-      </div>';
+    shadow.innerHTML = `
+      <style>
+        :host {
+          position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+          z-index: 2147483647; pointer-events: auto;
+          max-width: calc(100vw - 16px);
+        }
+        .toolbar {
+          display: flex; flex-wrap: wrap; align-items: center;
+          justify-content: center; gap: 4px; padding: 6px 10px;
+          background: light-dark(rgba(240,240,245,0.92), rgba(30,30,50,0.92));
+          backdrop-filter: blur(12px);
+          border-radius: var(--s2-radius-default, 12px);
+          box-shadow: 0 4px 24px light-dark(rgba(0,0,0,0.12), rgba(0,0,0,0.4));
+          font: 12px/1 -apple-system, BlinkMacSystemFont, sans-serif;
+          color: var(--s2-content-default, light-dark(#1a1a1a, #e0e0e0));
+        }
+        .row {
+          display: flex; align-items: center; gap: 4px;
+          flex-wrap: nowrap;
+        }
+        button {
+          display: flex; align-items: center; justify-content: center;
+          height: 28px; min-width: 28px; padding: 0 8px;
+          border: 1px solid light-dark(rgba(0,0,0,0.12), rgba(255,255,255,0.15));
+          border-radius: var(--s2-radius-pill, 9999px);
+          background: transparent;
+          color: var(--s2-content-default, light-dark(#1a1a1a, #e0e0e0));
+          cursor: pointer; font: inherit; transition: all 0.15s;
+        }
+        button:hover {
+          background: light-dark(rgba(0,0,0,0.06), rgba(255,255,255,0.1));
+        }
+        button.active {
+          background: color-mix(in srgb, var(--s2-accent, #6366f1) 20%, transparent);
+          border-color: var(--s2-accent, #6366f1);
+          color: var(--s2-accent, #6366f1);
+        }
+        button.primary {
+          background: var(--s2-accent, #6366f1);
+          border-color: var(--s2-accent, #6366f1);
+          color: #fff; font-weight: 600;
+        }
+        button.primary:hover {
+          background: color-mix(in srgb, var(--s2-accent, #6366f1) 85%, #000);
+        }
+        button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.close {
+          border-color: light-dark(rgba(220,38,38,0.3), rgba(239,68,68,0.4));
+          color: light-dark(#dc2626, #fca5a5);
+        }
+        button.close:hover {
+          background: light-dark(rgba(220,38,38,0.08), rgba(239,68,68,0.15));
+        }
+        .sep {
+          width: 1px; height: 18px;
+          background: light-dark(rgba(0,0,0,0.12), rgba(255,255,255,0.15));
+          margin: 0 2px;
+        }
+        .swatch {
+          width: 18px; height: 18px; border-radius: 50%;
+          border: 2px solid transparent;
+          cursor: pointer; transition: border-color 0.15s;
+        }
+        .swatch.active {
+          border-color: light-dark(#333, #fff);
+        }
+        svg {
+          width: 14px; height: 14px; fill: none; stroke: currentColor;
+          stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+        }
+
+        /* Narrow layout: two rows */
+        @container (max-width: 480px) {
+          .toolbar { gap: 4px; }
+        }
+      </style>
+      <div class="toolbar">
+        <div class="row">
+          <button data-tool="pencil" class="active" title="Pencil (1)">
+            <svg viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button data-tool="highlighter" title="Highlighter (2)">
+            <svg viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+          </button>
+          <button data-tool="rectangle" title="Rectangle (3)">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          </button>
+          <button data-tool="ellipse" title="Ellipse (4)">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="10" ry="8"/></svg>
+          </button>
+          <button data-tool="arrow" title="Arrow (5)">
+            <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+          <button data-tool="text" title="Text (6)">
+            <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          </button>
+          <div class="sep"></div>
+          <div class="swatch active" data-color="#ef4444" style="background:#ef4444" title="Red"></div>
+          <div class="swatch" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></div>
+          <div class="swatch" data-color="#22c55e" style="background:#22c55e" title="Green"></div>
+          <div class="swatch" data-color="#eab308" style="background:#eab308" title="Yellow"></div>
+          <div class="swatch" data-color="#ffffff" style="background:#ffffff; border-color: light-dark(#ccc, transparent)" title="White"></div>
+          <div class="swatch" data-color="#000000" style="background:#000000; border-color: light-dark(transparent, rgba(255,255,255,0.3))" title="Black"></div>
+        </div>
+        <div class="row">
+          <button data-action="undo" title="Undo (Ctrl+Z)">
+            <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          </button>
+          <button data-action="clear" title="Clear all">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          </button>
+          <div class="sep"></div>
+          <button data-action="screenshot" class="primary" title="New Screenshot">
+            <svg viewBox="0 0 24 24" style="margin-right:3px"><rect x="2" y="3" width="20" height="14" rx="2"/><circle cx="12" cy="10" r="2"/></svg>
+            Shot
+          </button>
+          <button data-action="attach" class="primary" title="Attach to Chat">
+            <svg viewBox="0 0 24 24" style="margin-right:3px"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Attach
+          </button>
+          <button data-action="close" class="close" title="Close (Esc)">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
 
     // --- Constants and state ---
     var canvas = document.getElementById('canvas');
@@ -414,6 +483,13 @@
         safeLick({ action: 'capture', dataUrl: dataUrl });
       }
       setTimeout(function() { attachBtn.disabled = false; }, 2000);
+      setTimeout(function() {
+        if (typeof slicc.minimize === 'function') {
+          slicc.minimize();
+        } else {
+          slicc.close();
+        }
+      }, 500);
     });
 
     shadow.querySelector('[data-action="close"]').addEventListener('click', function() {
@@ -449,8 +525,6 @@
       return dataUrl;
     }
 
-
-
     // --- Receive base image ---
     var emptyState = document.getElementById('empty-state');
     function loadBaseImage(dataUrl) {
@@ -464,12 +538,10 @@
     }
 
     slicc.on('update', function(data) {
-      // Accept multiple field names for flexibility
       var src = data.baseImage || data.dataUrl || (data.action === 'load-image' && data.dataUrl);
       if (src) {
         loadBaseImage(src);
       } else if (data.reload) {
-        // Cone wrote image to file, reload from VFS
         loadBaseFromFile();
       }
     });
@@ -495,11 +567,9 @@
     function loadBaseFromFile() {
       slicc.readFile('/shared/annotate-base.jpg').then(function(data) {
         if (data && data.length > 100) {
-          // readFile returns base64 for binary files
           var src = data.indexOf('data:') === 0 ? data : 'data:image/jpeg;base64,' + data;
           loadBaseImage(src);
         } else {
-          // No file yet, request screenshot
           safeLick({ action: 'request-screenshot' });
         }
       }).catch(function() {
@@ -514,7 +584,6 @@
           var src = data.indexOf('data:') === 0 ? data : 'data:image/jpeg;base64,' + data;
           loadBaseImage(src);
         }
-        // If no file, just show empty state — don't auto-request
       }).catch(function() {
         // No file, show empty state
       });

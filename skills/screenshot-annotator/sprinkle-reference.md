@@ -539,18 +539,36 @@ Use `safeLick` for `request-screenshot` and `close`. The `capture` action uses i
 | --------------------- | ------------------------------------------ |
 | `{ baseImage: '...' }`| Base64 data URL of captured tab screenshot |
 
-## Extension-mode capture (scoop-side)
+## Screenshot capture (cone-side)
 
-The owning scoop handles `request-screenshot` by running:
-
-```bash
-screencapture --dataurl
-```
-
-This returns a base64 data URL. The scoop then pushes it:
+The **cone** handles `request-screenshot` licks directly. The flow:
 
 ```bash
+# 1. Capture to file
+screencapture /tmp/screenshot.jpg
+
+# 2. Resize to ≤1200px wide at 70% quality
+convert /tmp/screenshot.jpg -resize 1200x -quality 70 /tmp/screenshot_small.jpg
+
+# 3. Base64-encode and push to sprinkle
+DATAURL="data:image/jpeg;base64,$(base64 -w0 /tmp/screenshot_small.jpg)"
 sprinkle send annotate "{\"baseImage\":\"$DATAURL\"}"
 ```
 
-If `screencapture` is unavailable (CLI fallback), the sprinkle starts with a blank dark canvas — the user can still draw annotations on it.
+Note: `screencapture` does NOT support a `--dataurl` flag. Always capture to a file first.
+
+If `screencapture` is unavailable, the sprinkle shows an empty state — the user can paste an image with Cmd+V.
+
+## After attaching
+
+After `slicc.attachImage(dataUrl)`, the sprinkle calls `slicc.minimize()` (SLICC v3.6.0+) to collapse the panel to the rail icon. Falls back to `slicc.close()` on older runtimes:
+
+```js
+setTimeout(function() {
+  if (typeof slicc.minimize === 'function') {
+    slicc.minimize();
+  } else {
+    slicc.close();
+  }
+}, 500);
+```
