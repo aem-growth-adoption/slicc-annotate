@@ -465,10 +465,27 @@
       redraw();
     });
 
-    // Screenshot button — requests a new base image from the scoop
+    // Screenshot button — capture directly via slicc.captureScreen() (no round-trip)
     var screenshotBtn = shadow.querySelector('[data-action="screenshot"]');
     screenshotBtn.addEventListener('click', function() {
-      safeLick({ action: 'request-screenshot' });
+      if (typeof slicc.captureScreen === 'function') {
+        screenshotBtn.disabled = true;
+        screenshotBtn.textContent = 'Capturing…';
+        slicc.captureScreen().then(function(shot) {
+          var dataUrl = 'data:' + shot.mimeType + ';base64,' + shot.base64;
+          loadBaseImage(dataUrl);
+          screenshotBtn.disabled = false;
+          screenshotBtn.textContent = 'Screenshot';
+        }).catch(function() {
+          // User cancelled or unavailable — fall back to lick
+          screenshotBtn.disabled = false;
+          screenshotBtn.textContent = 'Screenshot';
+          safeLick({ action: 'request-screenshot' });
+        });
+      } else {
+        // Fallback for older runtimes
+        safeLick({ action: 'request-screenshot' });
+      }
     });
 
     // Attach to Chat — composites base + annotations, attaches via slicc.attachImage
