@@ -495,7 +495,8 @@
       attachBtn.disabled = true;
       var dataUrl = getCompositeDataUrl();
       if (typeof slicc.attachImage === 'function') {
-        slicc.attachImage(dataUrl);
+        var b64 = dataUrl.replace(/^data:image\/[^;]+;base64,/, '');
+        slicc.attachImage(b64, 'annotation.jpg', 'image/jpeg');
       } else {
         safeLick({ action: 'capture', dataUrl: dataUrl });
       }
